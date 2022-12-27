@@ -1,0 +1,71 @@
+#!/usr/bin/env sh
+set -e
+DATE="$(date '+%d_%H:%M--%N')"
+TRASH_FOLDER="${TRASH_FOLDER:-${XDG_DATA_HOME:-$HOME/.local/share}/Trash}"
+CACHE_FOLDER="${XDG_CACHE_HOME:-$HOME/.cache}"
+CACHE_FILE="$CACHE_FOLDER/trashed"
+
+clean() {
+    TRASH_FOLDER_ESC="$(echo "$TRASH_FOLDER" | sed 's/\//\\\//g')"
+    files="$(find "$TRASH_FOLDER" | sed "s/$TRASH_FOLDER_ESC\///g")"
+
+    if [ "$files" = "$TRASH_FOLDER" ]; then
+        echo "Nothing in the trash!"
+        exit 0
+    else
+        echo "$files"
+        printf "Clean the trash [Y/n]? "
+        read -r answer
+
+        if [ ! "$answer" != "${answer#[Nn]}" ]; then
+            rm -r "$TRASH_FOLDER" "$CACHE_FILE" &&
+                echo "Trash Cleaned!"
+        fi
+
+        exit 0
+    fi
+}
+
+main() {
+    [ ! -d "$TRASH_FOLDER" ] && mkdir "$TRASH_FOLDER"
+    [ ! -d "$CACHE_FOLDER" ] && mkdir "$CACHE_FOLDER"
+
+    if [ -z "$*" ]; then
+        exit 1
+    elif [ "$1" = "clean" ]; then
+        clean "$@"
+    else
+        for file in "$@"; do
+            if [ -d "$file" ]; then
+                name="${file%/}"
+                name="$name--$DATE"
+            elif [ -f "$file" ]; then
+                name="${file%.*}--$DATE.${file##*.}"
+            else
+                echo "Error: $file does not exist or is invalid!"
+                exit 1
+            fi
+
+            name="${name##*/}"
+            case "$file" in
+                "/"*) mv "$file" "$TRASH_FOLDER/$name" ;;
+                *) mv "$file" "$TRASH_FOLDER/$name" ;;
+            esac
+        done
+
+        if [ -e "$CACHE_FILE" ]; then
+            count=$(cat "$CACHE_FILE")
+            count=$((count + 1))
+            echo $count >"$CACHE_FILE"
+            if [ "$count" -gt "${TRASH_AMOUNT:-5}" ]; then
+                notify-send -u normal "Trash" "Clean your trash!" ||
+                    echo "Clean your trash!"
+            fi
+        else
+            touch "$CACHE_FILE"
+            echo 1 >"$CACHE_FILE"
+        fi
+    fi
+}
+
+main "$@"
