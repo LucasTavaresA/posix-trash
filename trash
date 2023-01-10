@@ -40,7 +40,12 @@ main() {
                 name="${file%/}"
                 name="$name--$DATE"
             elif [ -f "$file" ]; then
-                name="${file%.*}--$DATE.${file##*.}"
+                extension="${file##*.}"
+                if [ "$extension" = "$file" ]; then
+                    name="$file--$DATE"
+                else
+                    name="${file%.*}--$DATE.$extension"
+                fi
             else
                 echo "Error: $file does not exist or is invalid!"
                 exit 1
