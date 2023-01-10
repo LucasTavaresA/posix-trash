@@ -5,15 +5,19 @@ TRASH_FOLDER="${TRASH_FOLDER:-${XDG_DATA_HOME:-$HOME/.local/share}/Trash}"
 CACHE_FOLDER="${XDG_CACHE_HOME:-$HOME/.cache}"
 CACHE_FILE="$CACHE_FOLDER/trashed"
 
-clean() {
-    TRASH_FOLDER_ESC="$(echo "$TRASH_FOLDER" | sed 's/\//\\\//g')"
-    files="$(find "$TRASH_FOLDER" | sed "s/$TRASH_FOLDER_ESC\///g")"
+has() {
+    _cmd=$(command -v "$1") 2>/dev/null || return 1
+    [ -x "$_cmd" ] || return 1
+}
 
-    if [ "$files" = "$TRASH_FOLDER" ]; then
-        echo "Nothing in the trash!"
-        exit 0
-    else
-        echo "$files"
+clean() {
+    if [ -d "$TRASH_FOLDER" ]; then
+        if has lsd; then
+            lsd -lA "$TRASH_FOLDER"
+        else
+            ls -lA "$TRASH_FOLDER"
+        fi
+
         printf "Clean the trash [Y/n]? "
         read -r answer
 
@@ -22,6 +26,9 @@ clean() {
                 echo "Trash Cleaned!"
         fi
 
+        exit 0
+    else
+        echo "Nothing in the trash!"
         exit 0
     fi
 }
