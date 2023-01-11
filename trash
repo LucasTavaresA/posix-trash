@@ -18,10 +18,10 @@ clean() {
             ls -lA "$TRASH_FOLDER"
         fi
 
-        printf "Clean the trash [Y/n]? "
+        printf "Clean the trash [y/N]? "
         read -r answer
 
-        if [ ! "$answer" != "${answer#[Nn]}" ]; then
+        if [ ! "$answer" = "${answer#[Yy]}" ]; then
             rm -r "$TRASH_FOLDER" "$CACHE_FILE" &&
                 echo "Trash Cleaned!"
         fi
